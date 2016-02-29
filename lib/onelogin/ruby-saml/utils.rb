@@ -96,20 +96,15 @@ module OneLogin
       # @param private_key    [OpenSSL::PKey::RSA] The Service provider private key
       # @return [String] The decrypted data
       def self.decrypt_data(encrypted_node, private_key)
-        encrypt_data = REXML::XPath.first(
-          encrypted_node,
-          "./xenc:EncryptedData",
-          { 'xenc' => XENC }
-        )
-        symmetric_key = retrieve_symmetric_key(encrypt_data, private_key)
+        symmetric_key = retrieve_symmetric_key(encrypted_node, private_key)
         cipher_value = REXML::XPath.first(
-          encrypt_data,
+          encrypted_node,
           "//xenc:EncryptedData/xenc:CipherData/xenc:CipherValue",
           { 'xenc' => XENC }
         )
         node = Base64.decode64(cipher_value.text)
         encrypt_method = REXML::XPath.first(
-          encrypt_data,
+          encrypted_node,
           "//xenc:EncryptedData/xenc:EncryptionMethod",
           { 'xenc' => XENC }
         )
@@ -124,14 +119,14 @@ module OneLogin
       def self.retrieve_symmetric_key(encrypt_data, private_key)
         encrypted_symmetric_key_element = REXML::XPath.first(
           encrypt_data,
-          "//xenc:EncryptedData/ds:KeyInfo/xenc:EncryptedKey/xenc:CipherData/xenc:CipherValue",
-          { "ds" => DSIG, "xenc" => XENC }
+          "//xenc:EncryptedKey/xenc:CipherData/xenc:CipherValue",
+          { "xenc" => XENC }
         )
         cipher_text = Base64.decode64(encrypted_symmetric_key_element.text)
         encrypt_method = REXML::XPath.first(
           encrypt_data,
-          "//xenc:EncryptedData/ds:KeyInfo/xenc:EncryptedKey/xenc:EncryptionMethod",
-          {"ds" => DSIG,  "xenc" => XENC }
+          "//xenc:EncryptedKey/xenc:EncryptionMethod",
+          { "xenc" => XENC }
         )
         algorithm = encrypt_method.attributes['Algorithm']
         retrieve_plaintext(cipher_text, private_key, algorithm)        
